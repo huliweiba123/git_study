@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 顶部导航栏 */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .user-name {
+            font-size: 16px;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 左侧边栏 */
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            margin-top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            transition: width 0.3s;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+        }
+
+        .menu-item {
+            border-bottom: 1px solid #34495e;
+        }
+
+        .menu-link {
+            display: block;
+            padding: 15px 20px;
+            color: #ecf0f1;
+            text-decoration: none;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .menu-link:hover {
+            background: #34495e;
+        }
+
+        .menu-link.active {
+            background: #3498db;
+        }
+
+        .submenu {
+            background: #34495e;
+            display: none;
+        }
+
+        .submenu.show {
+            display: block;
+        }
+
+        .submenu-item {
+            padding: 12px 20px 12px 40px;
+            color: #bdc3c7;
+            text-decoration: none;
+            display: block;
+            transition: background 0.3s;
+        }
+
+        .submenu-item:hover {
+            background: #2c3e50;
+        }
+
+        .submenu-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .third-level {
+            background: #2c3e50;
+            display: none;
+        }
+
+        .third-level.show {
+            display: block;
+        }
+
+        .third-level-item {
+            padding: 10px 20px 10px 60px;
+            color: #95a5a6;
+            text-decoration: none;
+            display: block;
+            transition: background 0.3s;
+        }
+
+        .third-level-item:hover {
+            background: #34495e;
+        }
+
+        .third-level-item.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .menu-icon {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .arrow {
+            float: right;
+            transition: transform 0.3s;
+        }
+
+        .arrow.rotated {
+            transform: rotate(90deg);
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            margin-top: 60px;
+            padding: 20px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            transition: margin-left 0.3s;
+        }
+
+        .main-content.expanded {
+            margin-left: 60px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        /* 图表区域 */
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .control-input {
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            width: 120px;
+        }
+
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+        }
+
+        .toggle-sidebar {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                width: 60px;
+            }
+
+            .main-content {
+                margin-left: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- 顶部导航栏 -->
+<header class="header">
+    <button class="toggle-sidebar" onclick="toggleSidebar()">☰</button>
+    <div class="logo" style="margin-left:30px;">后台管理系统</div>
+    <div class="user-info">
+        <div class="user-avatar">👤</div>
+        <div class="user-name">管理员</div>
+        <button class="logout-btn" onclick="logout()">退出登录</button>
+    </div>
+</header>
+
+<div class="container">
+    <!-- 左侧边栏 -->
+    <nav class="sidebar" id="sidebar">
+        <div class="menu-item">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(this)">
+                <span class="menu-icon">📊</span>
+                数据概况
+                <span class="arrow">▶</span>
+            </a>
+        </div>
+
+        <div class="menu-item">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(this)">
+                <span class="menu-icon">🚪</span>
+                引流获客
+                <span class="arrow">▶</span>
+            </a>
+            <div class="submenu">
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    渠道活码
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    自动拉群
+                    <span class="arrow">▶</span>
+                </a>
+
+            </div>
+        </div>
+
+        <div class="menu-item">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(this)">
+                <span class="menu-icon">👥</span>
+                客户
+                <span class="arrow">▶</span>
+            </a>
+            <div class="submenu">
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    线索公海
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    线索客户
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    商机管理
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    订单管理
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    回款管理
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    流失提醒
+                    <span class="arrow">▶</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="menu-item">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(this)">
+                <span class="menu-icon">🏠</span></span>
+                运营管理
+                <span class="arrow">▶</span>
+            </a>
+            <div class="submenu">
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    产品管理
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    产品统计
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    企微朋友圈
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    会话存档
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    客户统计
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    员工统计
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    渠道统计
+                    <span class="arrow">▶</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="menu-item">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(this)">
+                <span class="menu-icon">📦</span>
+                服务支持
+                <span class="arrow">▶</span>
+            </a>
+            <div class="submenu">
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    工单系统
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    排课系统
+                    <span class="arrow">▶</span>
+                </a>
+            </div>
+        </div>
+
+
+        <div class="menu-item">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(this)">
+                <span class="menu-icon">🛍️</span>
+                企业管理
+                <span class="arrow">▶</span>
+            </a>
+            <div class="submenu">
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    员工管理
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    权限管理
+                    <span class="arrow">▶</span>
+                </a>
+                <a href="#" class="submenu-item" onclick="toggleThirdLevel(this)">
+                    配置管理
+                    <span class="arrow">▶</span>
+                </a>
+            </div>
+        </div>
+
+
+        <div class="menu-item">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(this)">
+                <span class="menu-icon">⚙️</span>
+                系统设置
+                <span class="arrow">▶</span>
+            </a>
+            <div class="submenu">
+                <a href="#" class="submenu-item" onclick="showChart('settings')">基本设置</a>
+                <a href="#" class="submenu-item" onclick="showChart('logs')">系统日志</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="main-content" id="mainContent">
+        <h1 class="page-title">数据统计面板</h1>
+
+        <div class="charts-container">
+            <!-- 图表1 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">销售趋势</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">横坐标</label>
+                            <input type="text" class="control-input" id="xAxis1" value="月份" onchange="updateChart(1)">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">纵坐标</label>
+                            <input type="text" class="control-input" id="yAxis1" value="销售额(万元)"
+                                   onchange="updateChart(1)">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="chart1"></canvas>
+                </div>
+            </div>
+
+            <!-- 图表2 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">用户增长</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">横坐标</label>
+                            <input type="text" class="control-input" id="xAxis2" value="季度" onchange="updateChart(2)">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">纵坐标</label>
+                            <input type="text" class="control-input" id="yAxis2" value="用户数" onchange="updateChart(2)">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="chart2"></canvas>
+                </div>
+            </div>
+
+            <!-- 图表3 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">商品销量</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">横坐标</label>
+                            <input type="text" class="control-input" id="xAxis3" value="商品类别" onchange="updateChart(3)">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">纵坐标</label>
+                            <input type="text" class="control-input" id="yAxis3" value="销量(件)"
+                                   onchange="updateChart(3)">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="chart3"></canvas>
+                </div>
+            </div>
+
+            <!-- 图表4 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">访问量统计</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">横坐标</label>
+                            <input type="text" class="control-input" id="xAxis4" value="日期" onchange="updateChart(4)">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">纵坐标</label>
+                            <input type="text" class="control-input" id="yAxis4" value="访问量" onchange="updateChart(4)">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="chart4"></canvas>
+                </div>
+            </div>
+
+            <!-- 图表5 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">收入分析</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">横坐标</label>
+                            <input type="text" class="control-input" id="xAxis5" value="月份" onchange="updateChart(5)">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">纵坐标</label>
+                            <input type="text" class="control-input" id="yAxis5" value="收入(万元)"
+                                   onchange="updateChart(5)">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="chart5"></canvas>
+                </div>
+            </div>
+
+            <!-- 图表6 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">地区分布</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">横坐标</label>
+                            <input type="text" class="control-input" id="xAxis6" value="地区" onchange="updateChart(6)">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">纵坐标</label>
+                            <input type="text" class="control-input" id="yAxis6" value="订单数" onchange="updateChart(6)">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="chart6"></canvas>
+                </div>
+            </div>
+
+            <!-- 图表7 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">地区分布</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">横坐标</label>
+                            <input type="text" class="control-input" id="xAxis7" value="地区" onchange="updateChart(7)">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">纵坐标</label>
+                            <input type="text" class="control-input" id="yAxis7" value="订单数" onchange="updateChart(7)">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="chart7"></canvas>
+                </div>
+            </div>
+
+            <!-- 图表8 -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">地区分布</h3>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label class="control-label">横坐标</label>
+                            <input type="text" class="control-input" id="xAxis8" value="地区" onchange="updateChart(8)">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">纵坐标</label>
+                            <input type="text" class="control-input" id="yAxis8" value="订单数" onchange="updateChart(8)">
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-canvas">
+                    <canvas id="chart8"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script>
+    // 图表数据
+    const chartData = {
+        1: {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+            data: [120, 190, 300, 500, 200, 300],
+            color: '#3498db'
+        },
+        2: {
+            labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+            data: [1000, 1500, 2000, 1800],
+            color: '#e74c3c'
+        },
+        3: {
+            labels: ['电子产品', '服装', '食品', '图书', '家居', '电子产品', '服装', '食品', '图书', '家居', '电子产品', '服装', '食品', '图书', '家居', '电子产品', '服装', '食品', '图书', '家居'],
+            data: [800, 600, 400, 300, 500, 800, 600, 400, 300, 500, 800, 600, 400, 300, 500, 800, 600, 400, 300, 500],
+            color: '#2ecc71'
+        },
+        4: {
+            labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+            data: [1200, 1900, 3000, 5000, 2000, 3000, 1500],
+            color: '#f39c12'
+        },
+        5: {
+            labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+            data: [50, 80, 120, 150, 100, 130],
+            color: '#9b59b6'
+        },
+        6: {
+            labels: ['北京', '上海', '广州', '深圳', '杭州', '成都'],
+            data: [500, 800, 600, 700, 400, 300],
+            color: '#1abc9c'
+        },
+        7: {
+            labels: ['北京', '上海', '广州', '深圳', '杭州', '成都'],
+            data: [500, 800, 600, 700, 400, 300],
+            color: '#1abc9c'
+        },
+        8: {
+            labels: ['北京', '上海', '广州', '深圳', '杭州', '成都'],
+            data: [500, 800, 600, 700, 400, 300],
+            color: '#1abc9c'
+        },
+    };
+
+    // 图表实例
+    const charts = {};
+
+    // 初始化所有图表
+    function initCharts() {
+        for (let i = 1; i <= 8; i++) {
+            const ctx = document.getElementById(`chart${i}`).getContext('2d');
+            const data = chartData[i];
+
+            charts[i] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: '数据',
+                        data: data.data,
+                        backgroundColor: data.color,
+                        borderColor: data.color,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // 更新图表
+    function updateChart(chartIndex) {
+        const xAxisLabel = document.getElementById(`xAxis${chartIndex}`).value;
+        const yAxisLabel = document.getElementById(`yAxis${chartIndex}`).value;
+
+        if (charts[chartIndex]) {
+            charts[chartIndex].options.scales.x.title = {
+                display: true,
+                text: xAxisLabel
+            };
+            charts[chartIndex].options.scales.y.title = {
+                display: true,
+                text: yAxisLabel
+            };
+            charts[chartIndex].update();
+        }
+    }
+
+    // 侧边栏菜单切换
+    function toggleSubmenu(element) {
+        const submenu = element.nextElementSibling;
+        const arrow = element.querySelector('.arrow');
+
+        if (submenu.classList.contains('show')) {
+            submenu.classList.remove('show');
+            arrow.classList.remove('rotated');
+        } else {
+            // 关闭其他子菜单
+            document.querySelectorAll('.submenu.show').forEach(menu => {
+                menu.classList.remove('show');
+                menu.previousElementSibling.querySelector('.arrow').classList.remove('rotated');
+            });
+
+            submenu.classList.add('show');
+            arrow.classList.add('rotated');
+        }
+    }
+
+    // 三级菜单切换
+    function toggleThirdLevel(element) {
+        const thirdLevel = element.nextElementSibling;
+        const arrow = element.querySelector('.arrow');
+
+        if (thirdLevel.classList.contains('show')) {
+            thirdLevel.classList.remove('show');
+            arrow.classList.remove('rotated');
+        } else {
+            // 关闭同级其他三级菜单
+            const parentSubmenu = element.parentElement;
+            parentSubmenu.querySelectorAll('.third-level.show').forEach(menu => {
+                menu.classList.remove('show');
+                menu.previousElementSibling.querySelector('.arrow').classList.remove('rotated');
+            });
+
+            thirdLevel.classList.add('show');
+            arrow.classList.add('rotated');
+        }
+    }
+
+    // 显示图表
+    function showChart(chartType) {
+        // 这里可以添加切换不同图表的逻辑
+        console.log('显示图表:', chartType);
+    }
+
+    // 切换侧边栏
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+    }
+
+    // 退出登录
+    function logout() {
+        if (confirm('确定要退出登录吗？')) {
+            alert('已退出登录');
+        }
+    }
+
+    // 页面加载完成后初始化图表
+    document.addEventListener('DOMContentLoaded', function () {
+        initCharts();
+
+        // 初始化所有图表的坐标轴标题
+        for (let i = 1; i <= 8; i++) {
+            updateChart(i);
+        }
+    });
+</script>
+</body>
+</html>
